@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	procGetProxy  *syscall.LazyProc
+	procGetProxy   *syscall.LazyProc
 	procGlobalFree *syscall.LazyProc
 )
 
@@ -50,14 +50,14 @@ func (c *rawProxyConfig) free() {
 	globalFree(c.proxyBypass)
 }
 
-// parseHostPort parses "host:port" into an *Item.
-func parseHostPort(s string) *Item {
+// parseHostPort parses "host:port" into an *Item with the given scheme.
+func parseHostPort(s, scheme string) *Item {
 	s = strings.TrimSpace(s)
 	if s == "" {
 		return nil
 	}
 
-	// Strip any scheme prefix (e.g. "http://", "socks=")
+	// Strip any scheme prefix (e.g. "http://")
 	if idx := strings.Index(s, "://"); idx != -1 {
 		s = s[idx+3:]
 	}
@@ -74,14 +74,17 @@ func parseHostPort(s string) *Item {
 	}
 
 	return &Item{
-		Host: host,
-		Port: uint16(port),
+		Scheme: scheme,
+		Host:   host,
+		Port:   uint16(port),
 	}
 }
 
 // parseProxyString parses Windows proxy string which can be either:
 //   - "host:port" (applies to all protocols)
 //   - "http=host:port;https=host:port;socks=host:port" (protocol-specific)
+//
+// NOTE: Windows actually support socks proxy, see: https://superuser.com/questions/1528185/how-can-i-set-socks-proxy-on-windows
 func parseProxyString(raw string) (httpProxy, httpsProxy, socksProxy *Item) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
@@ -91,8 +94,9 @@ func parseProxyString(raw string) (httpProxy, httpsProxy, socksProxy *Item) {
 	// Check if it contains "=" which indicates protocol-specific format
 	if !strings.Contains(raw, "=") {
 		// Simple format: host:port applies to HTTP and HTTPS
-		item := parseHostPort(raw)
-		return item, item, nil
+		httpProxy = parseHostPort(raw, "http")
+		httpsProxy = parseHostPort(raw, "https")
+		return
 	}
 
 	// Protocol-specific format: "http=host:port;https=host:port;socks=host:port"
@@ -105,15 +109,14 @@ func parseProxyString(raw string) (httpProxy, httpsProxy, socksProxy *Item) {
 
 		proto := strings.ToLower(strings.TrimSpace(parts[0]))
 		value := strings.TrimSpace(parts[1])
-		item := parseHostPort(value)
 
 		switch proto {
 		case "http":
-			httpProxy = item
+			httpProxy = parseHostPort(value, "http")
 		case "https":
-			httpsProxy = item
+			httpsProxy = parseHostPort(value, "https")
 		case "socks":
-			socksProxy = item
+			socksProxy = parseHostPort(value, "socks5")
 		}
 	}
 

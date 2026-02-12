@@ -15,7 +15,7 @@ func getEnv(names ...string) string {
 	return ""
 }
 
-func parseProxyURL(raw string) *Item {
+func parseProxyURL(raw, scheme string) *Item {
 	if raw == "" {
 		return nil
 	}
@@ -32,7 +32,11 @@ func parseProxyURL(raw string) *Item {
 		if err != nil {
 			return nil
 		}
-		return &Item{Host: host, Port: uint16(port)}
+		s := u.Scheme
+		if s == "" {
+			s = scheme
+		}
+		return &Item{Scheme: s, Host: host, Port: uint16(port)}
 	}
 
 	// Fallback: try bare "host:port"
@@ -41,7 +45,7 @@ func parseProxyURL(raw string) *Item {
 		if err != nil {
 			return nil
 		}
-		return &Item{Host: host, Port: uint16(port)}
+		return &Item{Scheme: scheme, Host: host, Port: uint16(port)}
 	}
 
 	return nil
@@ -67,23 +71,23 @@ func splitHostPort(s string) (host, port string, ok bool) {
 
 func GetHTTP() (*Item, error) {
 	raw := getEnv("http_proxy", "HTTP_PROXY")
-	return parseProxyURL(raw), nil
+	return parseProxyURL(raw, "http"), nil
 }
 
 func GetHTTPS() (*Item, error) {
 	raw := getEnv("https_proxy", "HTTPS_PROXY")
-	return parseProxyURL(raw), nil
+	return parseProxyURL(raw, "https"), nil
 }
 
 func GetSOCKS() (*Item, error) {
 	raw := getEnv("all_proxy", "ALL_PROXY")
-	return parseProxyURL(raw), nil
+	return parseProxyURL(raw, "socks5"), nil
 }
 
 func GetAll() (httpProxy, httpsProxy, socksProxy *Item, err error) {
-	httpProxy = parseProxyURL(getEnv("http_proxy", "HTTP_PROXY"))
-	httpsProxy = parseProxyURL(getEnv("https_proxy", "HTTPS_PROXY"))
-	socksProxy = parseProxyURL(getEnv("all_proxy", "ALL_PROXY"))
+	httpProxy = parseProxyURL(getEnv("http_proxy", "HTTP_PROXY"), "http")
+	httpsProxy = parseProxyURL(getEnv("https_proxy", "HTTPS_PROXY"), "https")
+	socksProxy = parseProxyURL(getEnv("all_proxy", "ALL_PROXY"), "socks5")
 	return
 }
 

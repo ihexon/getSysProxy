@@ -92,15 +92,16 @@ func createSetting() (*setting, error) {
 	}, nil
 }
 
-func getProxy(settings C.CFDictionaryRef, proxyType C.ProxyType) *Item {
+func getProxy(settings C.CFDictionaryRef, proxyType C.ProxyType, scheme string) *Item {
 	raw := C.getProxy(settings, proxyType)
 	if raw.enabled == 0 {
 		return nil
 	}
 
 	return &Item{
-		Host: C.GoString(&raw.host[0]),
-		Port: uint16(raw.port),
+		Scheme: scheme,
+		Host:   C.GoString(&raw.host[0]),
+		Port:   uint16(raw.port),
 	}
 }
 
@@ -111,7 +112,7 @@ func GetHTTP() (*Item, error) {
 	}
 	defer s.Close()
 
-	return getProxy(s.ref, C.PROXY_HTTP), nil
+	return getProxy(s.ref, C.PROXY_HTTP, "http"), nil
 }
 
 func GetHTTPS() (*Item, error) {
@@ -121,7 +122,7 @@ func GetHTTPS() (*Item, error) {
 	}
 	defer s.Close()
 
-	return getProxy(s.ref, C.PROXY_HTTPS), nil
+	return getProxy(s.ref, C.PROXY_HTTPS, "https"), nil
 }
 
 func GetSOCKS() (*Item, error) {
@@ -131,7 +132,7 @@ func GetSOCKS() (*Item, error) {
 	}
 	defer s.Close()
 
-	return getProxy(s.ref, C.PROXY_SOCKS), nil
+	return getProxy(s.ref, C.PROXY_SOCKS, "socks5"), nil
 }
 
 func GetAll() (httpProxy, httpsProxy, socksProxy *Item, err error) {
@@ -141,9 +142,9 @@ func GetAll() (httpProxy, httpsProxy, socksProxy *Item, err error) {
 	}
 	defer s.Close()
 
-	httpProxy = getProxy(s.ref, C.PROXY_HTTP)
-	httpsProxy = getProxy(s.ref, C.PROXY_HTTPS)
-	socksProxy = getProxy(s.ref, C.PROXY_SOCKS)
+	httpProxy = getProxy(s.ref, C.PROXY_HTTP, "http")
+	httpsProxy = getProxy(s.ref, C.PROXY_HTTPS, "https")
+	socksProxy = getProxy(s.ref, C.PROXY_SOCKS, "socks5")
 	return
 }
 

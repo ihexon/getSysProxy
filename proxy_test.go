@@ -3,7 +3,7 @@ package sysproxy
 import "testing"
 
 func TestGetProxyInfo(t *testing.T) {
-	httpInfo, httpsInfo, err := GetAll()
+	httpInfo, httpsInfo, socksInfo, err := GetAll()
 	if err != nil {
 		t.Fatalf("%v", err)
 	}
@@ -16,5 +16,10 @@ func TestGetProxyInfo(t *testing.T) {
 	if httpsInfo != nil {
 		t.Logf("HTTPS Proxy Host: %v", httpsInfo.Host)
 		t.Logf("HTTPS Proxy Port: %v", httpsInfo.Port)
+	}
+
+	if socksInfo != nil {
+		t.Logf("SOCKS Proxy Host: %v", socksInfo.Host)
+		t.Logf("SOCKS Proxy Port: %v", socksInfo.Port)
 	}
 }

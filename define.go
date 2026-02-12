@@ -1,6 +1,6 @@
 package sysproxy
 
-type Info struct {
+type Item struct {
 	Host string
 	Port uint16
 }
